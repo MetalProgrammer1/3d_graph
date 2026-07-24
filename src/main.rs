@@ -42,8 +42,8 @@ fn main() -> Result<(), std::convert::Infallible> {
             }
         }
     }
-    for i in 0..20 {
-        for j in 0..20 {
+    for i in 0..11 {
+        for j in 0..11 {
             grid.push(vec![(i * spacing) as f32, (j * spacing) as f32, 0.0]);
         }
     }
@@ -93,7 +93,7 @@ fn main() -> Result<(), std::convert::Infallible> {
         }
         println!("{}", grid.len());
 
-        let center = rotate_about_z(phi_y, vec![27.0, 27.0, 0.0]);
+        let center = rotate_about_z(phi_y, vec![15.0, 15.0, 0.0]);
         let cpx = center[0];
         let cpy = center[1];
         let cpz = 0.0;
@@ -122,19 +122,19 @@ fn main() -> Result<(), std::convert::Infallible> {
             grid_points.push(Point::new(q_x + x_offset_grid, q_y + y_offset_grid));
         }
 
-        for i in 0..20 {
-            for j in 0..20 {
-                let idx = i * 20 + j;
-                if i + 1 < 20 {
-                    let idx_right = (i + 1) * 20 + j;
+        for i in 0..11 {
+            for j in 0..11 {
+                let idx = i * 11 + j;
+                if i + 1 < 11 {
+                    let idx_right = (i + 1) * 11 + j;
                     Line::new(grid_points[idx], grid_points[idx_right])
                         .into_styled(PrimitiveStyle::with_stroke(Rgb565::new(255, 255, 255), 1))
                         .draw(&mut display)?;
                 }
 
-                if j + 1 < 20 {
-                    let idx_right = i + j * 20;
-                    Line::new(grid_points[idx], grid_points[idx_right])
+                if j + 1 < 11 {
+                    let idx_down = idx + 1;
+                    Line::new(grid_points[idx], grid_points[idx_down])
                         .into_styled(PrimitiveStyle::with_stroke(Rgb565::new(255, 255, 255), 1))
                         .draw(&mut display)?;
                 }
