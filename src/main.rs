@@ -1,3 +1,4 @@
+pub mod grid;
 pub mod transform;
 use embedded_graphics::{
     pixelcolor::Rgb565,
@@ -11,8 +12,8 @@ use embedded_graphics_simulator::{
 };
 use libm::{cos, sin};
 
+use crate::grid::{generate_initial_grid, update_x_y_axis};
 use crate::transform::{rotate_about_x, rotate_about_z};
-
 const DISP_SIZE: u32 = 500;
 fn main() -> Result<(), std::convert::Infallible> {
     let mut display: SimulatorDisplay<Rgb565> =
@@ -25,7 +26,7 @@ fn main() -> Result<(), std::convert::Infallible> {
     let mut ps: Vec<Vec<f32>> = Vec::new();
     let mut qs: Vec<Vec<f32>> = Vec::new();
 
-    let mut grid: Vec<Vec<f32>> = Vec::new();
+    let mut grid: Vec<Vec<f32>> = generate_initial_grid();
 
     //let vert_points: Vec<Vec<f32>> = Vec::new();
     let spacing = 3;
@@ -51,7 +52,7 @@ fn main() -> Result<(), std::convert::Infallible> {
     let mut phi_y: f64 = 0.0;
     'running: loop {
         let _ = display.clear(Rgb565::new(1, 1, 1));
-
+        update_x_y_axis(&grid, rot, phi_y, &mut display);
         for i in ps.iter() {
             let px_og = i[0] as f32;
             let py_og = i[1] as f32;
@@ -91,55 +92,7 @@ fn main() -> Result<(), std::convert::Infallible> {
             .into_styled(PrimitiveStyle::with_fill(Rgb565::new(r, g, b)))
             .draw(&mut display)?;
         }
-        println!("{}", grid.len());
 
-        let center = rotate_about_z(phi_y, vec![15.0, 15.0, 0.0]);
-        let cpx = center[0];
-        let cpy = center[1];
-        let cpz = 0.0;
-        let cq_x = ((cpx - cpy) * cos(rot.to_radians()) as f32 * 15.0);
-        let cq_y = ((cpx + cpy) * sin(rot.to_radians()) as f32 - cpz) * 15.0;
-        let y_offset_grid = DISP_SIZE as i32 / 2 - cq_y as i32;
-        let x_offset_grid = DISP_SIZE as i32 / 2 - cq_x as i32;
-        let mut grid_points: Vec<Point> = Vec::new();
-        for i in 0..grid.len() {
-            let ps_rot_z = rotate_about_z(phi_y, vec![grid[i][0], grid[i][1], 0.0]);
-            //let ps_rot_x = rotate_about_x(phi_y, vec![ps_rot_z[0], ps_rot_z[1], ps_rot_z[2]]);
-            let px = ps_rot_z[0];
-            let py = ps_rot_z[1];
-            let pz = ps_rot_z[2];
-
-            let q_x = ((px - py) * cos(rot.to_radians()) as f32 * 15.0) as i32;
-            let q_y = (((px + py) * sin(rot.to_radians()) as f32 - pz) * 15.0) as i32;
-            let q_z = pz;
-
-            Rectangle::new(
-                Point::new(q_x + x_offset_grid, q_y + y_offset_grid),
-                Size::new(2, 2),
-            )
-            .into_styled(PrimitiveStyle::with_fill(Rgb565::new(255, 255, 255)))
-            .draw(&mut display)?;
-            grid_points.push(Point::new(q_x + x_offset_grid, q_y + y_offset_grid));
-        }
-
-        for i in 0..11 {
-            for j in 0..11 {
-                let idx = i * 11 + j;
-                if i + 1 < 11 {
-                    let idx_right = (i + 1) * 11 + j;
-                    Line::new(grid_points[idx], grid_points[idx_right])
-                        .into_styled(PrimitiveStyle::with_stroke(Rgb565::new(255, 255, 255), 1))
-                        .draw(&mut display)?;
-                }
-
-                if j + 1 < 11 {
-                    let idx_down = idx + 1;
-                    Line::new(grid_points[idx], grid_points[idx_down])
-                        .into_styled(PrimitiveStyle::with_stroke(Rgb565::new(255, 255, 255), 1))
-                        .draw(&mut display)?;
-                }
-            }
-        }
         qs.clear();
         window.update(&display);
         for e in window.events() {
