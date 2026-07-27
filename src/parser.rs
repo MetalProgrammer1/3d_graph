@@ -1,7 +1,5 @@
 use chumsky::prelude::*;
 
-use std::{f64, iter::Product};
-
 #[derive(Debug)]
 pub enum Expr<'src> {
     Num(f32),
