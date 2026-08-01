@@ -1,12 +1,9 @@
-use crate::DISP_SIZE;
+use crate::DrawItem;
 use crate::points::Point3;
 use crate::transform::rotate_about_z;
-use embedded_graphics::{
-    pixelcolor::Rgb565,
-    prelude::*,
-    primitives::{Line, PrimitiveStyle, Rectangle},
-};
-use embedded_graphics_simulator::SimulatorDisplay;
+use crate::{DISP_SIZE, DrawPoint};
+use embedded_graphics::prelude::*;
+
 use libm::{cos, sin};
 pub fn generate_initial_grid() -> Vec<Point3> {
     let mut grid: Vec<Point3> = Vec::new();
@@ -24,12 +21,9 @@ pub fn generate_initial_grid() -> Vec<Point3> {
     grid
 }
 
-pub fn update_x_y_axis(
-    grid: &Vec<Point3>,
-    rot: f64,
-    phi_y: f64,
-    display: &mut SimulatorDisplay<Rgb565>,
-) -> Result<(), std::convert::Infallible> {
+pub fn send_to_display_grid(grid: &Vec<Point3>, rot: f64, phi_y: f64) -> Vec<DrawPoint> {
+    let mut items: Vec<DrawPoint> = Vec::new();
+
     let center = rotate_about_z(
         phi_y,
         Point3 {
@@ -63,12 +57,6 @@ pub fn update_x_y_axis(
         let q_x = ((px - py) * cos(rot.to_radians()) as f32 * 15.0) as i32;
         let q_y = (((px + py) * sin(rot.to_radians()) as f32 - pz) * 15.0) as i32;
 
-        Rectangle::new(
-            Point::new(q_x + x_offset_grid, q_y + y_offset_grid),
-            Size::new(2, 2),
-        )
-        .into_styled(PrimitiveStyle::with_fill(Rgb565::new(255, 255, 255)))
-        .draw(display)?;
         grid_points.push(Point::new(q_x + x_offset_grid, q_y + y_offset_grid));
     }
 
@@ -77,18 +65,27 @@ pub fn update_x_y_axis(
             let idx = i * 11 + j;
             if i + 1 < 11 {
                 let idx_right = (i + 1) * 11 + j;
-                Line::new(grid_points[idx], grid_points[idx_right])
-                    .into_styled(PrimitiveStyle::with_stroke(Rgb565::new(255, 255, 255), 1))
-                    .draw(display)?;
+                items.push(DrawPoint {
+                    item: DrawItem::Line {
+                        a: grid_points[idx],
+                        b: grid_points[idx_right],
+                    },
+                    depth: 0.0,
+                });
             }
 
             if j + 1 < 11 {
                 let idx_down = idx + 1;
-                Line::new(grid_points[idx], grid_points[idx_down])
-                    .into_styled(PrimitiveStyle::with_stroke(Rgb565::new(255, 255, 255), 1))
-                    .draw(display)?;
+
+                items.push(DrawPoint {
+                    item: DrawItem::Line {
+                        a: grid_points[idx],
+                        b: grid_points[idx_down],
+                    },
+                    depth: 0.0,
+                });
             }
         }
     }
-    Ok(())
+    items
 }
