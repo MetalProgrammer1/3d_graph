@@ -1,6 +1,6 @@
 use crate::DrawItem;
 use crate::points::Point3;
-use crate::transform::rotate_about_z;
+use crate::transform::{rotate_about_x, rotate_about_z};
 use crate::{DISP_SIZE, DrawPoint};
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
@@ -22,41 +22,43 @@ pub fn generate_initial_grid() -> Vec<Point3> {
     grid
 }
 
-pub fn send_to_display_grid(grid: &Vec<Point3>, rot: f64, phi_y: f64) -> Vec<DrawPoint> {
+pub fn send_to_display_grid(
+    grid: &Vec<Point3>,
+    rot: f64,
+    phi_z: f64,
+    phi_x: f64,
+) -> Vec<DrawPoint> {
     let mut items: Vec<DrawPoint> = Vec::new();
 
-    let center = rotate_about_z(
-        phi_y,
+    let center_z = rotate_about_z(
+        phi_z,
         Point3 {
             x: 15.0,
             y: 15.0,
             z: 0.0,
         },
     );
-    let cpx = center.x;
-    let cpy = center.y;
-    let cpz = 0.0;
-    let cq_x = (cpx - cpy) * cos(rot.to_radians()) as f32 * 15.0;
-    let cq_y = ((cpx + cpy) * sin(rot.to_radians()) as f32 - cpz) * 15.0;
+    let center_x = rotate_about_x(phi_x, center_z);
+
+    let cq_x = center_x.x * 15.0;
+    let cq_y = -center_x.z * 15.0;
     let y_offset_grid = DISP_SIZE as i32 / 2 - cq_y as i32;
     let x_offset_grid = DISP_SIZE as i32 / 2 - cq_x as i32;
     let mut grid_points: Vec<Point> = Vec::new();
-    for i in 0..grid.len() {
+    for p in grid.iter() {
         let ps_rot_z = rotate_about_z(
-            phi_y,
+            phi_z,
             Point3 {
-                x: grid[i].x,
-                y: grid[i].y,
+                x: p.x,
+                y: p.y,
                 z: 0.0,
             },
         );
 
-        let px = ps_rot_z.x;
-        let py = ps_rot_z.y;
-        let pz = ps_rot_z.z;
+        let ps_rot_x = rotate_about_x(phi_x, ps_rot_z);
 
-        let q_x = ((px - py) * cos(rot.to_radians()) as f32 * 15.0) as i32;
-        let q_y = (((px + py) * sin(rot.to_radians()) as f32 - pz) * 15.0) as i32;
+        let q_x = (ps_rot_x.x * 15.0) as i32;
+        let q_y = (-ps_rot_x.z * 15.0) as i32;
 
         grid_points.push(Point::new(q_x + x_offset_grid, q_y + y_offset_grid));
     }

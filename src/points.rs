@@ -3,6 +3,7 @@ use crate::DrawItem;
 use crate::DrawPoint;
 use crate::grid;
 use crate::parser::{eval, parser};
+use crate::transform::rotate_about_x;
 use crate::transform::rotate_about_z;
 use chumsky::prelude::*;
 use embedded_graphics::{pixelcolor::Rgb565, prelude::*};
@@ -45,6 +46,7 @@ pub fn generate_screen_qs(
     diff_ps: &Vec<Vec<Point3>>,
     rot: f64,
     phi_z: f64,
+    phi_x: f64,
 ) -> (Vec<Vec<Point3>>, i32) {
     let mut diff_qs: Vec<Vec<Point3>> = Vec::new();
     let y_offset = DISP_SIZE as i32 / 2;
@@ -66,13 +68,22 @@ pub fn generate_screen_qs(
                 },
             );
 
-            let px = ps_rot_z.x;
-            let py = ps_rot_z.y;
-            let pz = ps_rot_z.z;
+            let ps_rot_x = rotate_about_x(
+                phi_x,
+                Point3 {
+                    x: ps_rot_z.x,
+                    y: ps_rot_z.y,
+                    z: ps_rot_z.z,
+                },
+            );
 
-            let q_x = ((px - py) * rot_cos) + 250.0;
-            let q_y = ((px + py) * rot_sin - pz) * 15.0;
-            let q_z = pz;
+            let q_x = (ps_rot_x.x * 15.0) + 250.0;
+            let q_y = (-ps_rot_x.z) * 15.0;
+            let q_z = ps_rot_x.y;
+
+            // let q_x = ((px - py) * rot_cos) + 250.0;
+            // let q_y = ((px + py) * rot_sin - pz) * 15.0;
+            // let q_z = pz;
 
             qs.push(Point3 {
                 x: q_x,
