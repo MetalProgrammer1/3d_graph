@@ -1,11 +1,14 @@
 use crate::DISP_SIZE;
 use crate::DrawItem;
 use crate::DrawPoint;
+use crate::grid;
 use crate::parser::{eval, parser};
 use crate::transform::rotate_about_z;
 use chumsky::prelude::*;
 use embedded_graphics::{pixelcolor::Rgb565, prelude::*};
 use libm::{cos, sin};
+
+pub struct Grid {}
 
 pub struct Point3 {
     pub x: f32,
@@ -15,24 +18,24 @@ pub struct Point3 {
 
 pub fn generate_points() -> Vec<Vec<Point3>> {
     let mut diff_ps: Vec<Vec<Point3>> = Vec::new();
-    let graphs: Vec<&str> = vec!["x^2+y^2", "cos(x^2)+y", "ln(y^2)", "x^3+y^3"];
+    let graphs: Vec<&str> = vec!["sin(x^2)+y^2", "sin(x^3)+y^3", "cos(y^2)+x^2"];
 
     for src in graphs.iter() {
         let ast = parser().parse(&src).into_result().unwrap();
 
         let mut ps: Vec<Point3> = Vec::new();
-        for i in -30..30 {
-            for j in -30..30 {
-                let x = i as f32 * 0.2;
-                let y = j as f32 * 0.2;
+        for i in -100..100 {
+            for j in -100..100 {
+                let x = i as f32 * 0.07;
+                let y = j as f32 * 0.07;
 
                 let z = eval(&ast, x, y);
                 //println!("z:{}", z);
-                if !z.is_nan() && z.is_finite() {
-                    ps.push(Point3 { x: x, y: y, z: z });
-                }
+
+                ps.push(Point3 { x: x, y: y, z: z });
             }
         }
+
         diff_ps.push(ps);
     }
     diff_ps
@@ -83,42 +86,63 @@ pub fn generate_screen_qs(
 }
 
 pub fn send_to_display_points(
-    diff_qs: &mut Vec<Vec<Point3>>,
+    diff_qs: &Vec<Vec<Point3>>,
     y_offset: i32,
     colours: &Vec<Vec<f32>>,
 ) -> Vec<Vec<DrawPoint>> {
     let mut graph_all_items: Vec<Vec<DrawPoint>> = Vec::new();
-    let mut count = 0;
-    for qs in diff_qs.iter_mut() {
+    let grid_size = 200;
+
+    for (count, qs) in diff_qs.iter().enumerate() {
         let colour = &colours[count];
-        qs.sort_by_key(|d| d.z.clone() as i32);
         let mut items: Vec<DrawPoint> = Vec::new();
-        let z_min = qs.iter().min_by(|a, b| a.z.partial_cmp(&b.z).unwrap());
-        let z_max = qs.iter().max_by(|a, b| a.z.partial_cmp(&b.z).unwrap());
-        for i in qs.iter() {
-            let t =
-                ((i.z - z_min.unwrap().z) / (z_max.unwrap().z - z_min.unwrap().z)).clamp(0.0, 1.0);
+        let non_nan_z = qs.iter().map(|p| p.z).filter(|z| !z.is_nan());
+
+        let z_min = non_nan_z.clone().fold(f32::INFINITY, f32::min);
+        let z_max = non_nan_z.clone().fold(f32::INFINITY, f32::max);
+
+        let mut add_line = |idx1: usize, idx2: usize| {
+            let p1 = &qs[idx1];
+            let p2 = &qs[idx2];
+            if p1.z.is_nan() || p2.z.is_nan() {
+                return;
+            }
+            let avg_z = (p1.z + p2.z) / 2.0;
+            let t = ((p1.z - z_min) / (z_max - z_min)).clamp(0.0, 1.0);
             let brightness = 0.2 + 0.8 * t;
 
             let r = (colour[0] * brightness).clamp(0.0, 31.0) as u8;
 
             let g = (colour[1] * brightness).clamp(0.0, 63.0) as u8;
             let b = (colour[2] * brightness).clamp(0.0, 31.0) as u8;
-            let dist_from_center = (i.x.powf(2.0) + i.y.powf(2.0)).powf(0.5);
-            let rect_size = 1; //(0.0 + dist_from_center * 0.1).clamp(1.0, 30.0) as u32;
-            let half = rect_size as i32 / 2;
 
             items.push(DrawPoint {
-                item: DrawItem::Rect {
-                    pos: Point::new(i.x as i32 - half, i.y as i32 + y_offset - half),
-                    size: rect_size,
+                item: DrawItem::Line {
+                    a: Point::new(p1.x as i32, p2.y as i32 + y_offset),
+                    b: Point::new(p2.x as i32, p2.y as i32 + y_offset),
                     color: Rgb565::new(r, g, b),
                 },
-                depth: i.z,
+                depth: avg_z,
             });
+        };
+        for i in 0..grid_size {
+            for j in 0..grid_size {
+                let current_idx = i * grid_size + j;
+                if j < grid_size - 1 {
+                    add_line(current_idx, current_idx + 1);
+                }
+                if i < grid_size - 1 {
+                    add_line(current_idx, current_idx + grid_size);
+                }
+            }
         }
+        items.sort_by(|a, b| {
+            a.depth
+                .partial_cmp(&b.depth)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         graph_all_items.push(items);
-        count = count + 1;
+        //count = count + 1;
     }
 
     graph_all_items

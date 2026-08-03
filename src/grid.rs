@@ -2,6 +2,7 @@ use crate::DrawItem;
 use crate::points::Point3;
 use crate::transform::rotate_about_z;
 use crate::{DISP_SIZE, DrawPoint};
+use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
 
 use libm::{cos, sin};
@@ -69,6 +70,7 @@ pub fn send_to_display_grid(grid: &Vec<Point3>, rot: f64, phi_y: f64) -> Vec<Dra
                     item: DrawItem::Line {
                         a: grid_points[idx],
                         b: grid_points[idx_right],
+                        color: Rgb565::new(255, 255, 255),
                     },
                     depth: 0.0,
                 });
@@ -81,6 +83,7 @@ pub fn send_to_display_grid(grid: &Vec<Point3>, rot: f64, phi_y: f64) -> Vec<Dra
                     item: DrawItem::Line {
                         a: grid_points[idx],
                         b: grid_points[idx_down],
+                        color: Rgb565::new(255, 255, 255),
                     },
                     depth: 0.0,
                 });

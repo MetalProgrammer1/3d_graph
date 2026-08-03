@@ -26,9 +26,9 @@ pub fn display_all(
                         .draw(display)?;
                 }
             }
-            DrawItem::Line { a, b } => {
+            DrawItem::Line { a, b, color } => {
                 Line::new(*a, *b)
-                    .into_styled(PrimitiveStyle::with_stroke(Rgb565::new(255, 255, 255), 1))
+                    .into_styled(PrimitiveStyle::with_stroke(*color, 1))
                     .draw(display)?;
             }
         }

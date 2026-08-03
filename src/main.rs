@@ -30,6 +30,7 @@ pub enum DrawItem {
     Line {
         a: Point,
         b: Point,
+        color: Rgb565,
     },
 }
 
@@ -44,7 +45,7 @@ fn main() -> Result<(), std::convert::Infallible> {
     let grid: Vec<Point3> = generate_initial_grid();
     let rot: f64 = 30.0;
     let mut phi_y: f64 = 0.0;
-    let mut colours = vec![
+    let colours = vec![
         vec![31.0, 7.0, 25.0],
         vec![31.0, 63.0, 31.0],
         vec![24.0, 24.0, 2.0],
@@ -76,8 +77,8 @@ fn main() -> Result<(), std::convert::Infallible> {
         window.update(&display);
         phi_y += 5.0;
         let compute_time = compute_start.elapsed();
-        //println!("{:?}", compute_time);
-        println!("{}", phi_y);
+        println!("{:?}", compute_time);
+        //println!("{}", phi_y);
         for e in window.events() {
             match e {
                 SimulatorEvent::Quit => {
@@ -86,6 +87,6 @@ fn main() -> Result<(), std::convert::Infallible> {
                 _ => {}
             }
         }
-        thread::sleep(Duration::from_millis(40));
+        thread::sleep(Duration::from_millis(1));
     }
 }
