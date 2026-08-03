@@ -44,7 +44,7 @@ pub fn generate_points() -> Vec<Vec<Point3>> {
 pub fn generate_screen_qs(
     diff_ps: &Vec<Vec<Point3>>,
     rot: f64,
-    phi_y: f64,
+    phi_z: f64,
 ) -> (Vec<Vec<Point3>>, i32) {
     let mut diff_qs: Vec<Vec<Point3>> = Vec::new();
     let y_offset = DISP_SIZE as i32 / 2;
@@ -58,7 +58,7 @@ pub fn generate_screen_qs(
             let pz_og = i.z as f32;
 
             let ps_rot_z = rotate_about_z(
-                phi_y,
+                phi_z,
                 Point3 {
                     x: px_og,
                     y: py_og,

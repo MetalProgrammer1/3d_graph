@@ -13,6 +13,7 @@ use embedded_graphics::{pixelcolor::Rgb565, prelude::*};
 use embedded_graphics_simulator::{
     OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
 };
+use sdl2::keyboard::Keycode;
 use std::time::Instant;
 use std::{thread, time::Duration};
 
@@ -44,7 +45,7 @@ fn main() -> Result<(), std::convert::Infallible> {
     let ps: Vec<Vec<Point3>> = generate_points();
     let grid: Vec<Point3> = generate_initial_grid();
     let rot: f64 = 30.0;
-    let mut phi_y: f64 = 0.0;
+    let mut phi_z: f64 = 0.0;
     let colours = vec![
         vec![31.0, 7.0, 25.0],
         vec![31.0, 63.0, 31.0],
@@ -55,14 +56,14 @@ fn main() -> Result<(), std::convert::Infallible> {
         let _ = display.clear(Rgb565::new(1, 1, 1));
         let compute_start = Instant::now();
 
-        let generated_screen_qs = generate_screen_qs(&ps, rot, phi_y);
+        let generated_screen_qs = generate_screen_qs(&ps, rot, phi_z);
 
         let mut diff_qs: Vec<Vec<Point3>> = generated_screen_qs.0;
         let y_offset = generated_screen_qs.1;
 
         let mut items: Vec<Vec<DrawPoint>> = Vec::new();
 
-        items.push(send_to_display_grid(&grid, rot, phi_y));
+        items.push(send_to_display_grid(&grid, rot, phi_z));
 
         let graph_items = send_to_display_points(&mut diff_qs, y_offset, &colours);
 
@@ -75,7 +76,7 @@ fn main() -> Result<(), std::convert::Infallible> {
         flattened_items.clear();
 
         window.update(&display);
-        phi_y += 5.0;
+        //phi_z += 5.0;
         let compute_time = compute_start.elapsed();
         println!("{:?}", compute_time);
         //println!("{}", phi_y);
@@ -84,6 +85,17 @@ fn main() -> Result<(), std::convert::Infallible> {
                 SimulatorEvent::Quit => {
                     break 'running Ok(());
                 }
+                SimulatorEvent::KeyDown { keycode, .. } => match keycode {
+                    Keycode::Left => {
+                        phi_z += 5.0;
+                    }
+                    Keycode::Right => {
+                        phi_z -= 5.0;
+                    }
+
+                    Keycode::Escape => break 'running Ok(()),
+                    _ => {}
+                },
                 _ => {}
             }
         }
