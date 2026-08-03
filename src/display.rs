@@ -20,9 +20,11 @@ pub fn display_all(
     for i in items.iter() {
         match &i.item {
             DrawItem::Rect { pos, size, color } => {
-                Rectangle::new(*pos, Size::new(*size, *size))
-                    .into_styled(PrimitiveStyle::with_fill(*color))
-                    .draw(display)?;
+                if pos.y > 0 {
+                    Rectangle::new(*pos, Size::new(*size, *size))
+                        .into_styled(PrimitiveStyle::with_fill(*color))
+                        .draw(display)?;
+                }
             }
             DrawItem::Line { a, b } => {
                 Line::new(*a, *b)
