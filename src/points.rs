@@ -1,13 +1,12 @@
 use crate::DISP_SIZE;
 use crate::DrawItem;
 use crate::DrawPoint;
-use crate::grid;
+
 use crate::parser::{eval, parser};
 use crate::transform::rotate_about_x;
 use crate::transform::rotate_about_z;
 use chumsky::prelude::*;
 use embedded_graphics::{pixelcolor::Rgb565, prelude::*};
-use libm::{cos, sin};
 
 pub struct Grid {}
 
@@ -16,22 +15,27 @@ pub struct Point3 {
     pub y: f32,
     pub z: f32,
 }
-
+const GRID_SIZE: i32 = 100;
+const STEP: f32 = (10.0 / GRID_SIZE as f32);
 pub fn generate_points() -> Vec<Vec<Point3>> {
     let mut diff_ps: Vec<Vec<Point3>> = Vec::new();
-    let graphs: Vec<&str> = vec!["sin(x^2)+y^2", "sin(x^3)+y^3", "cos(y^2)+x^2"];
+    let graphs: Vec<&str> = vec![
+        "(30-x^2-y^2)^0.5",
+        "x^2+y^2",
+        "cos(x)*sin(y)",
+        "sin(x^2)+y^2",
+    ];
 
     for src in graphs.iter() {
         let ast = parser().parse(&src).into_result().unwrap();
 
         let mut ps: Vec<Point3> = Vec::new();
-        for i in -100..100 {
-            for j in -100..100 {
-                let x = i as f32 * 0.07;
-                let y = j as f32 * 0.07;
+        for i in -GRID_SIZE..GRID_SIZE {
+            for j in -GRID_SIZE..GRID_SIZE {
+                let x = i as f32 * STEP;
+                let y = j as f32 * STEP;
 
                 let z = eval(&ast, x, y);
-                //println!("z:{}", z);
 
                 ps.push(Point3 { x: x, y: y, z: z });
             }
@@ -50,8 +54,7 @@ pub fn generate_screen_qs(
 ) -> (Vec<Vec<Point3>>, i32) {
     let mut diff_qs: Vec<Vec<Point3>> = Vec::new();
     let y_offset = DISP_SIZE as i32 / 2;
-    let rot_cos = cos(rot.to_radians()) as f32 * 15.0;
-    let rot_sin = sin(rot.to_radians()) as f32;
+
     for ps in diff_ps.iter() {
         let mut qs: Vec<Point3> = Vec::new();
         for i in ps.iter() {
@@ -81,10 +84,6 @@ pub fn generate_screen_qs(
             let q_y = (-ps_rot_x.z) * 15.0;
             let q_z = ps_rot_x.y;
 
-            // let q_x = ((px - py) * rot_cos) + 250.0;
-            // let q_y = ((px + py) * rot_sin - pz) * 15.0;
-            // let q_z = pz;
-
             qs.push(Point3 {
                 x: q_x,
                 y: q_y,
@@ -102,7 +101,7 @@ pub fn send_to_display_points(
     colours: &Vec<Vec<f32>>,
 ) -> Vec<Vec<DrawPoint>> {
     let mut graph_all_items: Vec<Vec<DrawPoint>> = Vec::new();
-    let grid_size = 200;
+    let grid_size: usize = (GRID_SIZE * 2) as usize;
 
     for (count, qs) in diff_qs.iter().enumerate() {
         let colour = &colours[count];
@@ -145,11 +144,14 @@ pub fn send_to_display_points(
                 if i < grid_size - 1 {
                     add_line(current_idx, current_idx + grid_size);
                 }
+                if i < grid_size - 1 && j < grid_size - 1 {
+                    add_line(current_idx, current_idx + grid_size + 1);
+                }
             }
         }
         items.sort_by(|a, b| {
-            a.depth
-                .partial_cmp(&b.depth)
+            b.depth
+                .partial_cmp(&a.depth)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
         graph_all_items.push(items);

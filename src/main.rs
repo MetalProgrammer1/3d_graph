@@ -48,10 +48,11 @@ fn main() -> Result<(), std::convert::Infallible> {
     let mut phi_z: f64 = 30.0;
     let mut phi_x: f64 = 30.0;
     let colours = vec![
-        vec![31.0, 7.0, 25.0],
-        vec![31.0, 63.0, 31.0],
-        vec![24.0, 24.0, 2.0],
-        vec![31.0, 23.0, 25.0],
+        vec![31.0, 31.0, 0.0],
+        vec![0.0, 0.0, 31.0],
+        vec![31.0, 63.0, 0.0],
+        vec![31.0, 0.0, 31.0],
+        vec![0.0, 63.0, 31.0],
     ];
     'running: loop {
         let _ = display.clear(Rgb565::new(1, 1, 1));
@@ -77,10 +78,9 @@ fn main() -> Result<(), std::convert::Infallible> {
         flattened_items.clear();
 
         window.update(&display);
-        //phi_z += 5.0;
+
         let compute_time = compute_start.elapsed();
         println!("{:?}", compute_time);
-        //println!("{}", phi_y);
         for e in window.events() {
             match e {
                 SimulatorEvent::Quit => {

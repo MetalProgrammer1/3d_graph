@@ -12,8 +12,8 @@ pub fn display_all(
     display: &mut SimulatorDisplay<Rgb565>,
 ) -> Result<(), std::convert::Infallible> {
     items.sort_by(|a, b| {
-        a.depth
-            .partial_cmp(&b.depth)
+        b.depth
+            .partial_cmp(&a.depth)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
